@@ -22,6 +22,11 @@ If you have already installed the project and only want to run the build, run:
 $ npm run build
 ```
 
+## Release diff-updater
+```sh
+$ npm run build:all
+```
+
 This command uses the [cargo-cp-artifact](https://github.com/neon-bindings/cargo-cp-artifact) utility to run the Rust build and copy the built library into `./index.node`.
 
 ## Exploring diff-updater
