@@ -17,10 +17,16 @@
         "browser:build": "cargo build --target wasm32-unknown-unknown && wasm-bindgen --out-dir artifacts/ --target bundler target/wasm32-unknown-unknown/debug/diff_updater.wasm",
         "browser:build:release": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen --out-dir artifacts/ --target bundler target/wasm32-unknown-unknown/release/diff_updater.wasm",
         "build": "npm run node:build && npm run browser:build",
-        "build:release": "npm run node:build:release && npm run browser:build:release"
+        "build:release": "npm run node:build:release && npm run browser:build:release",
+        "build:webpack": "webpack",
+        "build:all": "npm run build:release && npm run build:webpack"
     },
     "license": "",
     "devDependencies": {
-        "cargo-cp-artifact": "^0.1"
+        "cargo-cp-artifact": "^0.1",
+        "@wasm-tool/wasm-pack-plugin": "1.6.0",
+        "webpack": "5.79.0",
+        "webpack-cli": "5.0.1",
+        "webpack-dev-server": "4.13.3"
     }
 }
