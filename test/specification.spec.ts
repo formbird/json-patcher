@@ -1,4 +1,3 @@
-import test, {ExecutionContext} from 'ava'
 
 import {join} from 'path'
 import {readFileSync} from 'fs'
@@ -16,57 +15,52 @@ interface Spec {
   diffable: boolean
 }
 
-const spec_data = yaml.load(readFileSync(join(__dirname, 'spec.yaml'),
+const spec_data = yaml.load(readFileSync(join(__dirname, 'specification.yaml'),
                                          {encoding: 'utf8'})) as Spec[]
 
-function runCatching(spec: Spec, t: ExecutionContext, f: () => void) {
-  try {
-    f()
-  } catch (e) {
-    if (spec.results.some(it => it.includes('Error'))) {
-      t.pass(`should throw error`)
-    } else {
-      throw e
-    }
+function runCatching(spec: Spec, f: () => void) {
+  if (spec.results.some(it => it?.includes('Error') === true)) {
+    expect(() => f()).toThrow()
+  } else {
+    expect(() => f()).not.toThrow()
   }
 }
 
-test('Specification format', t => {
-  t.deepEqual(spec_data.length, 19, 'should have 19 items')
+test('Specification format', () => {
+  expect(spec_data.length).toEqual(19)
   // use sorted values and sort() to emulate set equality
   const props = ['diffable', 'input', 'name', 'output', 'patch', 'results']
   spec_data.forEach(spec => {
-    t.deepEqual(Object.keys(spec).filter(it => it !== 'ignored').sort(), props, `"${spec.name}" should have items with specific properties`)
+    expect(Object.keys(spec).filter(it => it !== 'ignored').sort()).toEqual(props)
   })
 })
 
 // take the input, apply the patch, and check the actual result against the
 // expected output
 spec_data.forEach(spec => {
-  test(`patch ${spec.name}`, t => {
+  test(`patch ${spec.name}`, () => {
     // patch operations are applied to object in-place
     const expected = spec.output
-    runCatching(spec, t, () => {
+    runCatching(spec, () => {
       const results = applyPatch(spec.input, spec.patch)
-      t.deepEqual(results, expected, `should equal expected output after applying patches`)
+      expect(results).toEqual(expected)
     })
   })
 })
 
 spec_data.filter(spec => spec.diffable).forEach(spec => {
-  test(`diff ${spec.name}`, t => {
+  test(`diff ${spec.name}`, () => {
     if (spec.ignored) {
-      t.pass(`should be ignored`)
       return
     }
 
     // we read this separately because patch is destructive and it's easier just to start with a blank slate
     // ignore spec items that are marked as not diffable
     // perform diff (create patch = list of operations) and check result against non-test patches in spec
-    runCatching(spec, t, () => {
+    runCatching(spec, () => {
       const actual = createPatch(spec.input, spec.output)
       const expected = spec.patch.filter(operation => operation.op !== 'test')
-      t.deepEqual(JSON.parse(actual), expected, `should produce diff equal to spec patch`)
+      expect(JSON.parse(actual)).toEqual(expected)
     })
   })
 })

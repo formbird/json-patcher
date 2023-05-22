@@ -1,5 +1,3 @@
-import test from 'ava'
-
 import {applyPatch} from '..'
 import {createParsedPatch as createPatch} from "./_index";
 
@@ -41,9 +39,9 @@ const pairs = [
 
 
 pairs.forEach(([input, output]) => {
-  test(`diff+patch: [${input}] => [${output}]`, t => {
+  test(`diff+patch: [${input}] => [${output}]`, () => {
     const patch = createPatch(input, output)
     const actualOutput = applyPatch(input, patch)
-    t.deepEqual(actualOutput, output, 'should apply produced patch to arrive at output')
+    expect(actualOutput).toEqual(output)
   })
 })
