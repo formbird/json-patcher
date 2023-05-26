@@ -26,7 +26,7 @@ function runCatching(spec: Spec, f: () => void) {
   }
 }
 
-test('Specification format', () => {
+it('Specification format', () => {
   expect(spec_data.length).toEqual(19)
   // use sorted values and sort() to emulate set equality
   const props = ['diffable', 'input', 'name', 'output', 'patch', 'results']
@@ -38,7 +38,7 @@ test('Specification format', () => {
 // take the input, apply the patch, and check the actual result against the
 // expected output
 spec_data.forEach(spec => {
-  test(`patch ${spec.name}`, () => {
+  it(`patch ${spec.name}`, () => {
     // patch operations are applied to object in-place
     const expected = spec.output
     runCatching(spec, () => {
@@ -49,7 +49,7 @@ spec_data.forEach(spec => {
 })
 
 spec_data.filter(spec => spec.diffable).forEach(spec => {
-  test(`diff ${spec.name}`, () => {
+  it(`diff ${spec.name}`, () => {
     if (spec.ignored) {
       return
     }

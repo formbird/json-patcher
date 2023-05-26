@@ -1,3 +1,4 @@
+import { expect } from 'chai'
 import {applyPatch} from '..'
 import {createParsedPatch as createPatch} from "./_index";
 
@@ -39,9 +40,9 @@ const pairs = [
 
 
 pairs.forEach(([input, output]) => {
-  test(`diff+patch: [${input}] => [${output}]`, () => {
+  it(`diff+patch: [${input}] => [${output}]`, () => {
     const patch = createPatch(input, output)
     const actualOutput = applyPatch(input, patch)
-    expect(actualOutput).toEqual(output)
+    expect(actualOutput).to.deep.equal(output);
   })
 })
