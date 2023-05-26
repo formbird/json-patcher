@@ -25,5 +25,6 @@ features = ["napi-6"]
 neon-serde = { git = "https://github.com/formbird/neon-serde", package = "neon-serde2", features = ["dates"]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2.84"
+wasm-bindgen = "0.2.86"
 serde-wasm-bindgen = "0.5.0"
+gloo-utils = "0.1"
