@@ -1,37 +1,21 @@
-
-import {join} from 'path'
-import {readFileSync} from 'fs'
-import * as yaml from 'js-yaml'
-
 import {applyPatch, createPatch, type PatchOperation} from '..'
+import spec_data from './specification'
+import { expect } from 'chai'
 
-interface Spec {
-  ignored: boolean;
-  name: string
-  input: any
-  patch: PatchOperation[]
-  output: any
-  results: (string | null)[],
-  diffable: boolean
-}
-
-const spec_data = yaml.load(readFileSync(join(__dirname, 'specification.yaml'),
-                                         {encoding: 'utf8'})) as Spec[]
-
-function runCatching(spec: Spec, f: () => void) {
+function runCatching(spec: typeof spec_data[number], f: () => void) {
   if (spec.results.some(it => it?.includes('Error') === true)) {
-    expect(() => f()).toThrow()
+    expect(() => f()).to.throw()
   } else {
-    expect(() => f()).not.toThrow()
+    expect(() => f()).not.to.throw()
   }
 }
 
 it('Specification format', () => {
-  expect(spec_data.length).toEqual(19)
+  expect(spec_data.length).to.equal(19)
   // use sorted values and sort() to emulate set equality
   const props = ['diffable', 'input', 'name', 'output', 'patch', 'results']
   spec_data.forEach(spec => {
-    expect(Object.keys(spec).filter(it => it !== 'ignored').sort()).toEqual(props)
+    expect(Object.keys(spec).filter(it => it !== 'ignored').sort()).to.deep.equal(props)
   })
 })
 
@@ -42,8 +26,8 @@ spec_data.forEach(spec => {
     // patch operations are applied to object in-place
     const expected = spec.output
     runCatching(spec, () => {
-      const results = applyPatch(spec.input, spec.patch)
-      expect(results).toEqual(expected)
+      const results = applyPatch(spec.input, spec.patch as PatchOperation[])
+      expect(results).to.deep.equal(expected)
     })
   })
 })
@@ -60,7 +44,7 @@ spec_data.filter(spec => spec.diffable).forEach(spec => {
     runCatching(spec, () => {
       const actual = createPatch(spec.input, spec.output)
       const expected = spec.patch.filter(operation => operation.op !== 'test')
-      expect(JSON.parse(actual)).toEqual(expected)
+      expect(JSON.parse(actual)).to.deep.equal(expected)
     })
   })
 })
