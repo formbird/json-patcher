@@ -15,7 +15,7 @@ export default {
     nodeResolve: {
         browser: true
     },
-    browsers: [playwrightLauncher({})],
+    browsers: [playwrightLauncher()],
     plugins: [
         esbuildPlugin({
             ts: true, target: 'auto', js: true, tsconfig: tsConfigPath
@@ -31,11 +31,4 @@ export default {
             }
         })
     ],
-    testRunnerHtml: testFramework =>
-    `<html>
-      <body>
-        <script>var exports = {}</script>
-        <script type="module" src="${testFramework}"></script>
-      </body>
-    </html>`,
 };
