@@ -9,7 +9,6 @@ const commonJs = fromRollup(rollupCommonJs);
 
 const tsConfigPath = join(process.cwd(), 'test/tsconfig.json')
 const chaiPath = join(process.cwd(), 'node_modules/@esm-bundle/chai/esm/chai.js');
-console.log(tsConfigPath)
 
 export default {
     nodeResolve: {
