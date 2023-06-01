@@ -18,16 +18,9 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v2
-      # this is needed because wasm-pack can't be used:
-      # https://github.com/rustwasm/wasm-pack/issues/691
-      - name: Install wasm-bindgen
-        run: |
-          if [ ! -f "Cargo.lock" ]; then
-            cargo fetch
-          fi
 
-          VERSION=$(cargo pkgid --frozen wasm-bindgen | cut -d "@" -f 2)
-          cargo +stable install --version $VERSION wasm-bindgen-cli
+      - name: Install wasm-pack
+        run: cargo install --git https://github.com/rustwasm/wasm-pack
       
       - run: npm install
       - name: Install playwright browsers
