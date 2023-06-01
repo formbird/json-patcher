@@ -27,3 +27,13 @@ neon-serde = { git = "https://github.com/formbird/neon-serde", package = "neon-s
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.86"
 serde-wasm-bindgen = "0.5.0"
+
+[profile.release]
+# less code to include into binary
+panic = 'abort'
+# optimization over all codebase ( better optimization, slower build )
+codegen-units = 1
+# optimization for size
+opt-level = 's'
+# link time optimization using using whole-program analysis
+lto = true
