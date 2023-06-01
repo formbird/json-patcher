@@ -24,7 +24,7 @@ This fully installs the project, including installing any dependencies and runni
 
 ### Building json-patcher
 
-Make sure you have Rust and [`wasm-bindgen`](https://rustwasm.github.io/wasm-bindgen/) installed. From the checked out source, run:
+Make sure you have Rust and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) installed. From the checked out source, run:
 
 ```sh
 $ npm run build
