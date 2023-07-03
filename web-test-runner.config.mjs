@@ -7,8 +7,8 @@ import { importMapsPlugin } from '@web/dev-server-import-maps';
 
 const commonJs = fromRollup(rollupCommonJs);
 
-const tsConfigPath = join(process.cwd(), 'test/tsconfig.json')
-const chaiPath = join(process.cwd(), 'node_modules/@esm-bundle/chai/esm/chai.js');
+const tsConfigPath = join(process.cwd(), 'test', 'tsconfig.json')
+const chaiPath = join(process.cwd(), 'node_modules', '@esm-bundle', 'chai', 'esm', 'chai.js');
 
 export default {
     nodeResolve: {
