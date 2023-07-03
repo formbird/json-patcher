@@ -33,4 +33,8 @@ jobs:
 
       - run: npm run build:release
 
-      - run: npm run test
+      - name: NodeJS tests
+        run: npm run node:test
+
+      - name: Browser tests
+        run: npm run browser:test
