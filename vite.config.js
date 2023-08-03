@@ -10,12 +10,11 @@ export default defineConfig({
             fileName: 'index',
             formats: ['es']
         },
-        target: 'esnext',
         outDir: 'browser',
         emptyOutDir: false
     },
     plugins: [
         wasm(),
-        // topLevelAwait(),
+        topLevelAwait(),
     ]
 })
