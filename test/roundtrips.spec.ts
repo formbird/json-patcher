@@ -101,7 +101,7 @@ it("issues/32", () => {
 });
 
 it("issues/35", () => {
-    const input = {name: "bob", image: undefined, cat: null};
+    const input = {name: "bob", image: null, cat: null};
     const output = {name: "bob", image: "foo.jpg", cat: "nikko"};
     const expected_patch: PatchOperation[] = [
         {op: "replace", path: "/image", value: "foo.jpg"},

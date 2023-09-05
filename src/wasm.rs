@@ -2,24 +2,20 @@ use json_patch::PatchOperation;
 use serde::ser::Serialize;
 use wasm_bindgen::prelude::*;
 
-fn to_value(value: impl Serialize) -> Result<JsValue, serde_wasm_bindgen::Error> {
-    let ser = serde_wasm_bindgen::Serializer::json_compatible();
-    value.serialize(&ser)
-}
-
 #[wasm_bindgen(js_name = createPatch)]
-pub fn create_patch(left: JsValue, right: JsValue) -> Result<JsValue, serde_wasm_bindgen::Error> {
-    let left = serde_wasm_bindgen::from_value(left)?;
-    let right = serde_wasm_bindgen::from_value(right)?;
+pub fn create_patch(left: String, right: String) -> Result<String, JsError> {
+    let left = serde_json::from_str(&left)?;
+    let right = serde_json::from_str(&right)?;
     let diff = json_patch::diff(&left, &right);
-    let output = to_value(&diff)?;
+    let output = serde_json::to_string(&diff)?;
     Ok(output)
 }
 
 #[wasm_bindgen(js_name = applyPatch)]
-pub fn apply_patch(doc: JsValue, patches: JsValue) -> Result<JsValue, serde_wasm_bindgen::Error> {
-    let mut doc = serde_wasm_bindgen::from_value(doc)?;
-    let patches: Vec<PatchOperation> = serde_wasm_bindgen::from_value(patches)?;
+pub fn apply_patch(doc: String, patches: String) -> Result<String, JsError> {
+    let mut doc = serde_json::from_str(&doc)?;
+    let patches: Vec<PatchOperation> = serde_json::from_str(&patches)?;
     json_patch::patch(&mut doc, &patches).expect("todo");
-    to_value(doc).map_err(|e| serde_wasm_bindgen::Error::new(&e.to_string()))
+    let s = serde_json::to_string(&doc)?;
+    Ok(s)
 }
