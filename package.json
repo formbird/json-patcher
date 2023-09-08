@@ -17,9 +17,8 @@
     "scripts": {
         "node:build": "npx cargo-cp-artifact -nc node/diff_updater.node -- cargo build --message-format=json-render-diagnostics",
         "node:build:release": "npx cargo-cp-artifact -nc node/diff_updater.node -- cargo build --message-format=json-render-diagnostics --release",
-        "build:vite": "vite build",
-        "browser:build": "wasm-pack build --no-package --out-dir browser --dev && $npm_execpath run build:vite",
-        "browser:build:release": "wasm-pack build --no-package --out-dir browser && $npm_execpath run build:vite",
+        "browser:build": "wasm-pack build --no-package --out-dir browser --dev",
+        "browser:build:release": "wasm-pack build --no-package --out-dir browser",
         "build": "$npm_execpath run node:build && $npm_execpath run browser:build",
         "build:release": "$npm_execpath run node:build:release && $npm_execpath run browser:build:release",
         "install": "$npm_execpath run node:build:release",
