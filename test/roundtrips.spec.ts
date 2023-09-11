@@ -120,3 +120,23 @@ it("issues/36", () => {
     checkRoundtrip(input, output, expected_patch);
 });
 
+
+it('round trip maintains fields order', () => {
+    const input = {
+        xx: 1,
+        aa: 2,
+    }
+
+    const output = {
+        zz: 3,
+        aa: 4,
+    }
+
+    const patch = createPatch(input, output);
+    const patchedOutput = applyPatch(input, patch);
+
+    expect(JSON.stringify(patchedOutput)).to.equal(JSON.stringify({
+        zz: 3,
+        aa: 4,
+    }))
+})
