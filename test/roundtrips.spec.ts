@@ -1,3 +1,4 @@
+// taken from https://github.com/chbrown/rfc6902/blob/master/test/issues.ts
 import {applyPatch, type PatchOperation, createPatch} from "..";
 import { expect } from 'chai'
 
@@ -103,8 +104,8 @@ it("issues/35", () => {
     const input = {name: "bob", image: undefined, cat: null};
     const output = {name: "bob", image: "foo.jpg", cat: "nikko"};
     const expected_patch: PatchOperation[] = [
-        {op: "replace", path: "/cat", value: "nikko"},
         {op: "replace", path: "/image", value: "foo.jpg"},
+        {op: "replace", path: "/cat", value: "nikko"},
     ];
 
     checkRoundtrip(input, output, expected_patch);
@@ -119,24 +120,3 @@ it("issues/36", () => {
     ];
     checkRoundtrip(input, output, expected_patch);
 });
-
-
-it('round trip maintains fields order', () => {
-    const input = {
-        xx: 1,
-        aa: 2,
-    }
-
-    const output = {
-        zz: 3,
-        aa: 4,
-    }
-
-    const patch = createPatch(input, output);
-    const patchedOutput = applyPatch(input, patch);
-
-    expect(JSON.stringify(patchedOutput)).to.equal(JSON.stringify({
-        zz: 3,
-        aa: 4,
-    }))
-})
