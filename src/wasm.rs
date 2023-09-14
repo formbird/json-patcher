@@ -1,5 +1,4 @@
 use json_patch::PatchOperation;
-use serde::ser::Serialize;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = createPatch)]
