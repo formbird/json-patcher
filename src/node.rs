@@ -1,10 +1,7 @@
 use json_patch::PatchOperation;
-
 use neon::prelude::*;
-use neon::result::Throw;
-use serde::de::DeserializeOwned;
 
-macro_rules! map_to_neon {
+macro_rules! map_err_to_neon {
     ($cx:expr, $val:expr) => {{
         match $val {
             Ok(v) => Ok(v),
@@ -13,43 +10,29 @@ macro_rules! map_to_neon {
     }};
 }
 
-fn to_json_value<'a, D: DeserializeOwned>(
-    cx: &mut FunctionContext<'a>,
-    js_value: Handle<'a, JsValue>,
-) -> Result<D, Throw> {
-    match neon_serde::from_value(cx, js_value) {
-        Ok(v) => Ok(v),
-        Err(neon_serde::errors::Error::Js(err)) => Err(err),
-        Err(e) => cx.throw_error(e.to_string()),
-    }
-}
+pub fn create_patch(mut cx: FunctionContext) -> JsResult<JsString> {
+    let left = cx.argument::<JsString>(0)?;
+    let left = map_err_to_neon!(cx, serde_json::from_str(&left.value(&mut cx)))?;
 
-pub fn create_patch(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let left = cx.argument::<JsValue>(0)?;
-    let left = to_json_value(&mut cx, left)?;
-
-    let right = cx.argument::<JsValue>(1)?;
-    let right = to_json_value(&mut cx, right)?;
+    let right = cx.argument::<JsString>(1)?;
+    let right = map_err_to_neon!(cx, serde_json::from_str(&right.value(&mut cx)))?;
 
     let patch = json_patch::diff(&left, &right);
-    let s = map_to_neon!(cx, neon_serde::to_value(&mut cx, &patch))?;
-    Ok(s)
+    let s = map_err_to_neon!(cx, serde_json::to_string(&patch))?;
+    Ok(JsString::new(&mut cx, &s))
 }
 
-pub fn apply_patch(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let doc = cx.argument::<JsValue>(0)?;
-    let mut doc = to_json_value(&mut cx, doc)?;
+pub fn apply_patch(mut cx: FunctionContext) -> JsResult<JsString> {
+    let doc = cx.argument::<JsString>(0)?;
+    let mut doc = map_err_to_neon!(cx, serde_json::from_str(&doc.value(&mut cx)))?;
 
-    let patch = cx.argument::<JsValue>(1)?;
-    let patch: Vec<PatchOperation> = to_json_value(&mut cx, patch)?;
+    let patch = cx.argument::<JsString>(1)?;
+    let patch: Vec<PatchOperation> = map_err_to_neon!(cx, serde_json::from_str(&patch.value(&mut cx)))?;
 
-    map_to_neon!(cx, json_patch::patch(&mut doc, &patch))?;
+    map_err_to_neon!(cx, json_patch::patch(&mut doc, &patch))?;
 
-    match neon_serde::to_value(&mut cx, &doc) {
-        Ok(v) => Ok(v),
-        Err(neon_serde::errors::Error::Js(err)) => Err(err),
-        Err(e) => cx.throw_error(e.to_string()),
-    }
+    let s = map_err_to_neon!(cx, serde_json::to_string(&doc))?;
+    Ok(JsString::new(&mut cx, &s))
 }
 
 #[neon::main]
