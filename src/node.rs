@@ -17,7 +17,8 @@ pub fn create_patch(mut cx: FunctionContext) -> JsResult<JsString> {
     let right = cx.argument::<JsString>(1)?;
     let right = map_err_to_neon!(cx, serde_json::from_str(&right.value(&mut cx)))?;
 
-    let patch = json_patch::diff(&left, &right);
+    let patch = crate::diff::diff_any(&left, &right, "");
+    // let patch = json_patch::diff(&left, &right);
     let s = map_err_to_neon!(cx, serde_json::to_string(&patch))?;
     Ok(JsString::new(&mut cx, &s))
 }

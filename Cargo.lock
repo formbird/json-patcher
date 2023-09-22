@@ -57,6 +57,7 @@ dependencies = [
 name = "json-patcher"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "json-patch",
  "neon",
  "serde",
