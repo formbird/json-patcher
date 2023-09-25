@@ -38,7 +38,7 @@ pub fn diff_any(input: &Value, output: &Value, ptr: &str) -> Vec<PatchOperation>
 
     match (input, output) {
         (Value::Array(input_array), Value::Array(output_array)) => {
-            diff_arrays(ptr, input_array, output_array)
+            diff_arrays(input_array, output_array, ptr)
         }
         (Value::Object(input_obj), Value::Object(output_obj)) => {
             diff_objects(input_obj, output_obj, ptr)
@@ -82,37 +82,131 @@ pub fn diff_objects(
     operations
 }
 
-pub fn diff_arrays(ptr: &str, input: &Vec<Value>, output: &Vec<Value>) -> Vec<PatchOperation> {
-    let mut patches = Vec::new();
-
-    // Handle replacements and additions
-    for (index, value) in output.iter().enumerate() {
-        match input.get(index) {
-            Some(old_value) if old_value != value => {
-                patches.extend(diff_any(old_value, value, &format!("{}/{}", ptr, index)))
-            }
-            None => {
-                patches.push(PatchOperation::Add(AddOperation { path: format!("{}/{}", ptr, index), value: value.clone() }));
-            }
-            _ => {}
+#[derive(Debug, Clone)]
+enum Operation {
+    Add { index: usize, value: Value },
+    Remove { index: usize },
+    Replace { index: usize, original: Value, value: Value },
+}
+impl Operation {
+    fn new_add(index: usize, value: Value) -> Self {
+        Operation::Add {
+            index,
+            value,
         }
     }
 
-    // Handle removals
-    let mut offset = 0;
-    if input.len() > output.len() {
-        for index in output.len()..input.len() {
-            if output.get(index) != Some(&input[index]) {
-                patches.push(PatchOperation::Remove(RemoveOperation { path: format!("{}/{}", ptr, index - offset) }));
-                offset += 1;
-            }
+    fn new_remove(index: usize) -> Self {
+        Operation::Remove {
+            index,
         }
     }
 
-
-    patches
+    fn new_replace(index: usize, original: Value, value: Value) -> Self {
+        Operation::Replace {
+            index,
+            value,
+            original
+        }
+    }
 }
 
+fn diff_arrays(input: &[Value], output: &[Value], ptr: &str) -> Vec<PatchOperation> {
+    fn dist(
+        i: usize,
+        j: usize,
+        input: &[Value],
+        output: &[Value],
+        memo: &mut Vec<Vec<Option<Vec<Operation>>>>,
+    ) -> Vec<Operation> {
+        if let Some(cached) = memo[i][j].as_ref() {
+            return cached.clone();
+        }
+
+        let result;
+
+        if i > 0 && j > 0 && input[i - 1] == output[j - 1] {
+            // Equal elements, no operation needed
+            result = dist(i - 1, j - 1, input, output, memo);
+        } else {
+            let mut alternatives = Vec::new();
+
+            if i > 0 {
+                // Remove operation
+                let remove = Operation::new_remove(i - 1);
+                let mut remove_base = dist(i - 1, j, input, output, memo);
+                remove_base.push(remove);
+                alternatives.push(remove_base);
+            }
+
+            if j > 0 {
+                // Add operation
+                let add = if i == input.len() {
+                    // Append to the end of the array
+                    Operation::new_add(input.len(), output[j - 1].clone())
+                } else {
+                    Operation::new_add(i, output[j - 1].clone())
+                };
+                let mut add_base = dist(i, j - 1, input, output, memo);
+                add_base.push(add);
+                alternatives.push(add_base);
+            }
+
+            if i > 0 && j > 0 {
+                // Replace operation
+                let replace = Operation::new_replace(i - 1, input[i - 1].clone(), output[j - 1].clone());
+                let mut replace_base = dist(i - 1, j - 1, input, output, memo);
+                replace_base.push(replace);
+                alternatives.push(replace_base);
+            }
+
+            // Find the alternative with the lowest cost
+            result = alternatives
+                .iter()
+                .min_by(|a, b| {
+                    let len_a = a.len();
+                    let len_b = b.len();
+                    len_a.cmp(&len_b)
+                })
+                .unwrap_or(&Vec::new()) // Default to an empty vector if no valid alternatives
+                .clone();
+        }
+
+        memo[i][j] = Some(result.clone());
+        result
+    }
+
+    let mut memo: Vec<Vec<Option<Vec<Operation>>>> = vec![vec![None; output.len() + 1]; input.len() + 1];
+    let array_operations = dist(input.len(), output.len(), input, output, &mut memo);
+
+    let (padded_operations, _) = array_operations.into_iter().fold((Vec::new(), 0isize), |(mut operations, padding), array_operation| {
+        match array_operation {
+            Operation::Add { value, index } => {
+                let padded_index = (index as isize) + 1 + padding;
+                let index_token = if padded_index < (input.len() as isize + padding) { padded_index.to_string() } else { "-".to_string() };
+
+                operations.push(PatchOperation::Add(AddOperation {
+                    path: format!("{}/{}", ptr, index_token),
+                    value,
+                }));
+                (operations, padding + 1)
+            },
+            Operation::Remove { index } => {
+                operations.push(PatchOperation::Remove(RemoveOperation {
+                    path: format!("{}/{}", ptr, (index as isize) + padding),
+                }));
+                (operations, padding - 1)
+            },
+            Operation::Replace { index, value, original } => {
+                let replace_ptr = format!("{}/{}", ptr, (index as isize) + padding);
+                let replace_operations = diff_any(&original, &value, &replace_ptr);
+                operations.extend(replace_operations);
+                (operations, padding)
+            }
+        }
+    });
+    padded_operations
+}
 
 #[cfg(test)]
 mod test {
@@ -232,7 +326,7 @@ mod test {
             },
             {
                 "op": "remove",
-                "path": "/foo/2 "
+                "path": "/foo/2"
             }
         ]);
         let actual: Vec<PatchOperation> = serde_json::from_value(actual).unwrap();
@@ -360,5 +454,24 @@ mod test {
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
+}
 
+mod diff_arrays {
+    #![allow(unused)]
+
+    use serde_json::json;
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let input = json!(["A", "Z", "Z"]);
+        let output = json!(["A"]);
+        let actual: Vec<PatchOperation> = serde_json::from_value(json!([
+          { "op": "remove", "path": "/1" },
+          { "op": "remove", "path": "/1" },
+        ])).unwrap();
+        let patch = diff_arrays(&input.as_array().unwrap(), &output.as_array().unwrap(), "");
+        eprintln!("patch: {:?}", patch);
+        assert_eq!(patch, actual);
+    }
 }
