@@ -2,33 +2,36 @@ use indexmap::IndexMap;
 use json_patch::{AddOperation, PatchOperation, RemoveOperation, ReplaceOperation};
 use serde_json::{Map, Value};
 
-pub fn subtract(minuend: &Map<String, Value>, subtrahend: &Map<String, Value>) -> Vec<String> {
+pub fn subtract<'m>(
+    minuend: &'m Map<String, Value>,
+    subtrahend: &'m Map<String, Value>,
+) -> Vec<&'m String> {
     let mut result = Vec::new();
 
     for (key, _) in minuend.iter().filter(|(_, value)| !value.is_null()) {
         if !subtrahend.contains_key(key) {
-            result.push(key.clone());
+            result.push(key);
         }
     }
 
     result
 }
 
-pub fn intersection(objects: &[Map<String, Value>]) -> Vec<String> {
+pub fn intersection<'k>(objects: [&'k Map<String, Value>; 2]) -> IndexMap<&'k String, i32> {
     let length = objects.len();
     // prepare empty counter to keep track of how many objects each key occurred in
-    let mut counter: IndexMap<String, i32> = IndexMap::new();
+    let mut counter: IndexMap<&'k String, i32> = IndexMap::with_capacity(length);
     // go through each object and increment the counter for each key in that object
     for object in objects {
         for (key, _) in object {
-            let count = counter.entry(key.to_string()).or_insert(0);
+            let count = counter.entry(&key).or_insert(0);
             *count += 1;
         }
     }
     // now delete all keys from the counter that were not seen in every object
     counter.retain(|_, &mut v| v == length as i32);
     // finally, extract whatever keys remain in the counter
-    counter.keys().cloned().collect()
+    counter
 }
 
 pub fn diff_any(input: &Value, output: &Value, ptr: &str) -> Vec<PatchOperation> {
@@ -52,7 +55,6 @@ pub fn diff_any(input: &Value, output: &Value, ptr: &str) -> Vec<PatchOperation>
     }
 }
 
-
 pub fn diff_objects(
     input: &Map<String, Value>,
     output: &Map<String, Value>,
@@ -69,13 +71,13 @@ pub fn diff_objects(
     for key in subtract(output, input) {
         operations.push(PatchOperation::Add(AddOperation {
             path: format!("{}/{}", ptr, key),
-            value: output[&key].clone(),
+            value: output[key].clone(),
         }));
     }
 
-    for key in intersection(&[input.clone(), output.clone()]) {
+    for (key, _) in intersection([input, output]) {
         let key_ptr = format!("{}/{}", ptr, key);
-        let key_operations = diff_any(&input[&key], &output[&key], &key_ptr);
+        let key_operations = diff_any(&input[key], &output[key], &key_ptr);
         operations.extend(key_operations);
     }
 
@@ -92,7 +94,10 @@ pub fn diff_arrays(ptr: &str, input: &Vec<Value>, output: &Vec<Value>) -> Vec<Pa
                 patches.extend(diff_any(old_value, value, &format!("{}/{}", ptr, index)))
             }
             None => {
-                patches.push(PatchOperation::Add(AddOperation { path: format!("{}/{}", ptr, index), value: value.clone() }));
+                patches.push(PatchOperation::Add(AddOperation {
+                    path: format!("{}/{}", ptr, index),
+                    value: value.clone(),
+                }));
             }
             _ => {}
         }
@@ -103,22 +108,22 @@ pub fn diff_arrays(ptr: &str, input: &Vec<Value>, output: &Vec<Value>) -> Vec<Pa
     if input.len() > output.len() {
         for index in output.len()..input.len() {
             if output.get(index) != Some(&input[index]) {
-                patches.push(PatchOperation::Remove(RemoveOperation { path: format!("{}/{}", ptr, index - offset) }));
+                patches.push(PatchOperation::Remove(RemoveOperation {
+                    path: format!("{}/{}", ptr, index - offset),
+                }));
                 offset += 1;
             }
         }
     }
 
-
     patches
 }
-
 
 #[cfg(test)]
 mod test {
     use super::diff_any as diff;
     use json_patch::PatchOperation;
-    use serde_json::{json};
+    use serde_json::json;
 
     #[test]
     fn a_1_adding_an_object_member() {
@@ -183,7 +188,6 @@ mod test {
         assert_eq!(patch, actual);
     }
 
-
     #[test]
     fn a_10_adding_a_nested_member_object() {
         let input = json!({
@@ -247,7 +251,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
           { "op": "remove", "path": "/1" },
           { "op": "remove", "path": "/1" },
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -259,7 +264,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             { "op": "replace", "path": "/0", "value": "B" },
             { "op": "replace", "path": "/1", "value": "A" }
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -271,7 +277,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             { "op": "add", "path": "/0", "value": "B" },
             { "op": "add", "path": "/1", "value": "A" }
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -283,7 +290,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             { "op": "replace", "path": "/0", "value": "M" },
             { "op": "replace", "path": "/2", "value": "A" }
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -293,10 +301,11 @@ mod test {
         let input = json!(["A", "A", "R"]);
         let output = json!([]);
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
-        { "op": "remove", "path": "/0" },
-        { "op": "remove", "path": "/0" },
-        { "op": "remove", "path": "/0" }
-    ])).unwrap();
+            { "op": "remove", "path": "/0" },
+            { "op": "remove", "path": "/0" },
+            { "op": "remove", "path": "/0" }
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -306,10 +315,11 @@ mod test {
         let input = json!(["A", "B", "C"]);
         let output = json!(["B", "C", "D"]);
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
-        { "op": "replace", "path": "/0", "value": "B" },
-        { "op": "replace", "path": "/1", "value": "C" },
-        { "op": "replace", "path": "/2", "value": "D" }
-    ])).unwrap();
+            { "op": "replace", "path": "/0", "value": "B" },
+            { "op": "replace", "path": "/1", "value": "C" },
+            { "op": "replace", "path": "/2", "value": "D" }
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -319,9 +329,10 @@ mod test {
         let input = json!(["A", "C"]);
         let output = json!(["A", "B", "C"]);
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
-        { "op": "replace", "path": "/1", "value": "B" },
-        { "op": "add", "path": "/2", "value": "C" }
-    ])).unwrap();
+            { "op": "replace", "path": "/1", "value": "B" },
+            { "op": "add", "path": "/2", "value": "C" }
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -333,7 +344,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             { "op": "replace", "path": "/1", "value": "Z" },
             { "op": "remove", "path": "/2" },
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -345,7 +357,8 @@ mod test {
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             {"op": "replace", "path": "/image", "value": "foo.jpg"},
             {"op": "replace", "path": "/cat", "value": "nikko"},
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
@@ -356,9 +369,9 @@ mod test {
         let output = json!([{"A": 1, "B": 20}, {"C": 3}]);
         let actual: Vec<PatchOperation> = serde_json::from_value(json!([
             {"op": "replace", "path": "/0/B", "value": 20},
-        ])).unwrap();
+        ]))
+        .unwrap();
         let patch = diff(&input, &output, "");
         assert_eq!(patch, actual);
     }
-
 }
