@@ -16,8 +16,8 @@ it('round trip maintains fields order', () => {
     const patchedOutput = applyPatch(input, patch);
 
     expect(JSON.stringify(patchedOutput)).to.equal(JSON.stringify({
-        zz: 3,
         aa: 4,
+        zz: 3,
     }))
 })
 

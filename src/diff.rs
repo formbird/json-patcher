@@ -24,7 +24,7 @@ pub fn intersection<'k>(objects: [&'k Map<String, Value>; 2]) -> IndexMap<&'k St
     // go through each object and increment the counter for each key in that object
     for object in objects {
         for (key, _) in object {
-            let count = counter.entry(&key).or_insert(0);
+            let count = counter.entry(key).or_insert(0);
             *count += 1;
         }
     }
@@ -106,8 +106,8 @@ pub fn diff_arrays(ptr: &str, input: &Vec<Value>, output: &Vec<Value>) -> Vec<Pa
     // Handle removals
     let mut offset = 0;
     if input.len() > output.len() {
-        for index in output.len()..input.len() {
-            if output.get(index) != Some(&input[index]) {
+        for (index, item) in input.iter().enumerate().skip(output.len()) {
+            if output.get(index) != Some(item) {
                 patches.push(PatchOperation::Remove(RemoveOperation {
                     path: format!("{}/{}", ptr, index - offset),
                 }));

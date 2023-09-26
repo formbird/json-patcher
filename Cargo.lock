@@ -45,9 +45,9 @@ checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 [[package]]
 name = "json-patch"
 version = "1.1.0"
-source = "git+https://github.com/formbird/json-patch?branch=inlined-treediff#ba0d3df60cdbba0e1fb70d8aec744dbaad80f4a2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f7765dccf8c39c3a470fc694efe322969d791e713ca46bc7b5c506886157572"
 dependencies = [
- "indexmap",
  "serde",
  "serde_json",
  "thiserror",

@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 pub fn create_patch(left: String, right: String) -> Result<String, JsError> {
     let left = serde_json::from_str(&left)?;
     let right = serde_json::from_str(&right)?;
-    let diff = json_patch::diff(&left, &right);
+    let diff = crate::diff::diff_any(&left, &right, "");
     let output = serde_json::to_string(&diff)?;
     Ok(output)
 }
