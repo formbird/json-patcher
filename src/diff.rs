@@ -232,7 +232,7 @@ mod test {
             },
             {
                 "op": "remove",
-                "path": "/foo/2 "
+                "path": "/foo/2"
             }
         ]);
         let actual: Vec<PatchOperation> = serde_json::from_value(actual).unwrap();
