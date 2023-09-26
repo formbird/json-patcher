@@ -1,4 +1,4 @@
-mod diff;
+pub mod diff;
 #[cfg(not(target_arch = "wasm32"))]
 mod node;
 #[cfg(not(target_arch = "wasm32"))]
