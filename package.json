@@ -12,6 +12,7 @@
         "src/*",
         "browser/**/*",
         "node/index.js",
+        "types.d.ts",
         "README.md"
     ],
     "scripts": {
