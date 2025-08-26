@@ -1,6 +1,6 @@
 {
     "name": "@formbird/json-patcher",
-    "version": "0.6.8",
+    "version": "0.6.10",
     "description": "Diff Updater",
     "main": "node/index.js",
     "browser": "browser/index.mjs",
