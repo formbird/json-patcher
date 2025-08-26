@@ -1,0 +1,6 @@
+[toolchain]
+# consider bumping this as new versions come out and are testing
+# this file exists to so we don't use a version of Rust that has never touched a developer's machine
+channel = "1.88.0"
+components = [ "rustfmt", "clippy" ]
+profile = "minimal"
